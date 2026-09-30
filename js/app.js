@@ -3,9 +3,7 @@ const BASE_URL = 'https://api-redemet.decea.mil.br';
 
 // State
 let icaos = new Set(['SBGR']); // Default example
-let checkInterval = null;
 let customAudioUrl = null;
-let isAlarmPlaying = false;
 let audioObj = new Audio();
 let defaultBeepInterval = null;
 
@@ -26,6 +24,7 @@ const volumeSlider = document.getElementById('volume');
 const audioFileInput = document.getElementById('audio-file');
 const chkMissingMetar = document.getElementById('chk-missing-metar-alarm');
 const chkAvisoAlarm = document.getElementById('chk-aviso-alarm');
+const chkSpeciAlarm = document.getElementById('chk-speci-alarm');
 const toleranceMinutes = document.getElementById('tolerance-minutes');
 
 // Modals
@@ -168,7 +167,7 @@ async function fetchData() {
         const [metarRes, tafRes, avisoRes] = await Promise.all([
             fetchRedemet(`/mensagens/metar/${icaoStr}`),
             fetchRedemet(`/mensagens/taf/${icaoStr}`),
-            fetchRedemet(`/mensagens/aviso_aerodromo/${icaoStr}`) // Might be empty if no endpoint, but we handle it
+            fetchRedemet(`/mensagens/aviso_aerodromo/${icaoStr}`) // Might be empty se não houver
         ]);
 
         renderData(metarRes, metarContainer, 'METAR');
@@ -176,9 +175,10 @@ async function fetchData() {
         renderData(avisoRes, avisosContainer, 'Avisos');
         
         checkNewAvisosLogic(avisoRes);
+        checkSpeciLogic(metarRes);
         
         apiStatusEl.textContent = "Atualizado (OK)";
-        lastMetarData = metarRes; // Store for logic check
+        lastMetarData = metarRes; // Guardar para a lógica do METAR em falta
     } catch (e) {
         console.error(e);
         apiStatusEl.textContent = "Erro na API";
@@ -207,7 +207,6 @@ function renderData(apiResponse, container, type) {
         return;
     }
 
-    // items usually array of objects with id_localidade, validade_inicial, mens
     items.forEach(item => {
         const card = document.createElement('div');
         card.className = 'data-card';
@@ -238,6 +237,8 @@ function startTimers() {
 let lastMetarData = null;
 let knownAvisos = new Set();
 let isFirstAvisoCheck = true;
+let knownSpecis = new Set();
+let isFirstSpeciCheck = true;
 
 function checkMissingMetarLogic() {
     if (!chkMissingMetar.checked || icaos.size === 0) return;
@@ -246,15 +247,10 @@ function checkMissingMetarLogic() {
     const m = now.getUTCMinutes();
     const tol = parseInt(toleranceMinutes.value) || 10;
     
-    // Basic logic: if current minute > tolerance, we expect a METAR for the current hour.
-    // If not found in lastMetarData, trigger alarm.
+    // Logic: se estivermos no minuto igual ou um pouco acima da tolerância, alarmamos uma vez
     if (m >= tol && m < tol + 2) { 
-        // Trigger only once around the tolerance window
         const missingIcaos = [];
         icaos.forEach(icao => {
-            // Very simplified check: see if we have data for this ICAO
-            // In real life, we should parse the day/hour from the METAR message 
-            // e.g. "METAR SBGR 291200Z ..."
             const hasRecent = (lastMetarData?.data?.data || []).some(d => d.id_localidade === icao);
             if (!hasRecent) missingIcaos.push(icao);
         });
@@ -269,7 +265,6 @@ function checkNewAvisosLogic(avisoRes) {
     if (!chkAvisoAlarm.checked) return;
     
     const items = avisoRes?.data?.data || [];
-
     let hasNew = false;
     const currentAvisosIds = [];
 
@@ -297,28 +292,60 @@ function checkNewAvisosLogic(avisoRes) {
     isFirstAvisoCheck = false;
 }
 
+function checkSpeciLogic(metarRes) {
+    if (!chkSpeciAlarm.checked) return;
+    
+    const items = metarRes?.data?.data || [];
+    let hasNew = false;
+    const currentSpeciIds = [];
+
+    items.forEach(item => {
+        if (item.mens && item.mens.startsWith('SPECI')) {
+            const speciId = `${item.id_localidade}_${item.validade_inicial || item.data_hora || item.mens}`;
+            currentSpeciIds.push(speciId);
+            
+            if (!knownSpecis.has(speciId)) {
+                hasNew = true;
+                knownSpecis.add(speciId);
+            }
+        }
+    });
+
+    knownSpecis.forEach(id => {
+        if (!currentSpeciIds.includes(id)) {
+            knownSpecis.delete(id);
+        }
+    });
+
+    if (hasNew && !isFirstSpeciCheck) {
+        const icaosWithWarnings = [...new Set(items.filter(i => i.mens.startsWith('SPECI')).map(i => i.id_localidade))];
+        triggerAlarm("Novo SPECI Recebido", icaosWithWarnings);
+    }
+    
+    isFirstSpeciCheck = false;
+}
+
 function triggerAlarm(title, icaoList) {
     const msg = `Localidades: ${icaoList.join(', ')}`;
     
-    // Foreground Visual
+    // Efeito Visual
     alertMessage.textContent = msg;
     visualAlert.classList.remove('hidden');
     
-    // Audio
+    // Efeito Áudio
     if (document.getElementById('chk-repeat-alarm').checked) {
         audioObj.loop = true;
     } else {
         audioObj.loop = false;
     }
     
-    // Default beep if no custom audio
     if (!customAudioUrl) {
         playDefaultBeep();
     } else {
-        audioObj.play().catch(e => console.log('Audio play blocked:', e));
+        audioObj.play().catch(e => console.log('Audio block:', e));
     }
 
-    // Background Push / Notification
+    // Notificação Local (Push Desktop/Mobile)
     if (Notification.permission === 'granted') {
         if (navigator.serviceWorker && navigator.serviceWorker.controller) {
             navigator.serviceWorker.controller.postMessage({
@@ -326,12 +353,12 @@ function triggerAlarm(title, icaoList) {
                 title: title,
                 options: {
                     body: msg,
-                    icon: 'icon.png', // Assuming we will have an icon or ignore
+                    icon: './icons/icon-192x192.png',
                     vibrate: [200, 100, 200]
                 }
             });
         } else {
-            new Notification(title, { body: msg });
+            new Notification(title, { body: msg, icon: './icons/icon-192x192.png' });
         }
     }
 }
@@ -374,8 +401,8 @@ function registerServiceWorker() {
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
             navigator.serviceWorker.register('./sw.js')
-                .then(reg => console.log('SW Registered:', reg.scope))
-                .catch(err => console.log('SW Reg failed:', err));
+                .then(reg => console.log('SW Registado:', reg.scope))
+                .catch(err => console.log('SW Erro:', err));
         });
     }
 }
