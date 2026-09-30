@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WEATHER MONITOR</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Quicksand:wght@600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#e0f2fe">
+</head>
+<body>
+    <div class="background-gradient" id="dynamic-bg"></div>
+
+    <header class="top-header">
+        <div class="header-content">
+            <div class="title-area">
+                <h1>⛅ WEATHER MONITOR</h1>
+                <span class="status-indicator" id="api-status">Conectando...</span>
+            </div>
+            
+            <div class="icao-input-area">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <label for="icao-input" style="margin-bottom: 0;">✈️ Localidades (ICAO):</label>
+                    <button id="btn-refresh-manual" class="action-btn secondary" style="margin-top: 0; padding: 4px 12px; font-size: 0.8rem; width: auto; border-radius: 8px;">🔄 Atualizar</button>
+                </div>
+                <div class="tags-input-container">
+                    <ul id="icao-tags" class="tags-list"></ul>
+                    <input type="text" id="icao-input" placeholder="🔍 Adicionar ICAO (ex: SBGR) e Enter" maxlength="4" style="text-transform: uppercase;">
+                </div>
+            </div>
+
+            <div class="zulu-time" id="zulu-time-display">
+                --:--:-- Z
+            </div>
+        </div>
+    </header>
+
+    <main class="dashboard-grid">
+        <!-- PAINEL ESQUERDO: Configs & METAR -->
+        <section class="panel left-panel">
+            <div class="panel-header">
+                <h2>⚙️ Configurações</h2>
+            </div>
+            <div class="panel-content settings-content">
+                <div class="setting-group">
+                    <label for="text-size">Tamanho do Texto:</label>
+                    <input type="range" id="text-size" min="12" max="24" value="14">
+                </div>
+                <div class="setting-group">
+                    <label for="volume">Volume do Alarme:</label>
+                    <input type="range" id="volume" min="0" max="1" step="0.1" value="1">
+                </div>
+                <div class="setting-group">
+                    <label for="audio-file">Áudio Personalizado:</label>
+                    <input type="file" id="audio-file" accept="audio/*">
+                </div>
+                <div class="setting-group checkboxes">
+                    <label><input type="checkbox" id="chk-repeat-alarm"> Repetir Alarme</label>
+                    <label><input type="checkbox" id="chk-speci-alarm" checked> Receber alarme para SPECI</label>
+                    <label><input type="checkbox" id="chk-missing-metar-alarm" checked> Disparar alarme quando estiver sem METAR</label>
+                    <label><input type="checkbox" id="chk-aviso-alarm" checked> Receber alarme para Avisos de Aeródromo</label>
+                </div>
+                <div class="setting-group">
+                    <label for="tolerance-minutes">Tolerância METAR em Falta (min):</label>
+                    <input type="number" id="tolerance-minutes" min="1" max="59" value="10">
+                </div>
+                <button id="btn-request-notifications" class="action-btn">🔔 Habilitar Notificações</button>
+                <button id="btn-test-alarm" class="action-btn secondary">Testar Alarme</button>
+            </div>
+
+            <div class="panel-header mt-4 flex-between">
+                <h2>⚠️ Avisos de Aeródromo</h2>
+                <div class="timer-badge">Próxima verificação: <span id="timer-avisos">60</span>s</div>
+            </div>
+            <div class="panel-content data-list" id="avisos-container">
+                <!-- Avisos go here -->
+                <p class="placeholder-text">Aguardando localidades...</p>
+            </div>
+        </section>
+
+        <!-- PAINEL CENTRAL: METAR / SPECI -->
+        <section class="panel center-panel">
+            <div class="panel-header">
+                <h2>⛅ METAR / SPECI</h2>
+            </div>
+            <div class="panel-content data-list" id="metar-container">
+                <!-- METAR data goes here -->
+                <p class="placeholder-text">Aguardando localidades...</p>
+            </div>
+        </section>
+
+        <!-- PAINEL DIREITO: TAF & Resumo -->
+        <section class="panel right-panel">
+            <div class="panel-header flex-between">
+                <h2>✈️ TAF</h2>
+                <div class="timer-badge">Próxima verificação: <span id="timer-taf">60</span>s</div>
+            </div>
+            <div class="panel-content data-list" id="taf-container">
+                <!-- TAF data goes here -->
+                <p class="placeholder-text">Aguardando localidades...</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Modal Visual Alert -->
+    <div id="visual-alert" class="visual-alert hidden">
+        <h1 class="alert-title">🔔 ALERTA METEOROLÓGICO</h1>
+        <p id="alert-message">METAR em falta ou aviso recebido!</p>
+        <button id="btn-dismiss-alert" class="action-btn alert-dismiss">Reconhecer Alarme</button>
+    </div>
+
+    <div class="credits">
+        Desenvolvido por: 3S BCT PEDRO ALVES<br>
+        TWR-AN
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
