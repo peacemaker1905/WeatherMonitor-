@@ -90,15 +90,15 @@ setInterval(updateDynamicBackground, 60000);
 
 // --- Event Listeners ---
 function setupEventListeners() {
-    icaoInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            const val = icaoInput.value.trim().toUpperCase();
-            if (val.length === 4) {
-                icaos.add(val);
-                icaoInput.value = '';
-                renderTags();
-                fetchData();
-            }
+    const icaoForm = document.getElementById('icao-form');
+    icaoForm.addEventListener('submit', (e) => {
+        e.preventDefault(); // Prevent page reload
+        const val = icaoInput.value.trim().toUpperCase();
+        if (val.length === 4) {
+            icaos.add(val);
+            icaoInput.value = '';
+            renderTags();
+            fetchData();
         }
     });
 

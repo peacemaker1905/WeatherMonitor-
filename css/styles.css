@@ -490,18 +490,43 @@ body {
     }
 }
 @media (max-width: 768px) {
-    .dashboard-grid, .header-content {
-        grid-template-columns: 1fr;
+    body {
+        height: auto;
+        overflow: visible;
+    }
+    .background-gradient {
+        position: fixed;
+    }
+    .dashboard-grid {
+        display: flex;
+        flex-direction: column;
+        overflow-y: visible;
+        padding: 15px;
+        gap: 15px;
+    }
+    .header-content {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
     }
     .left-panel, .title-area {
-        grid-column: 1;
+        grid-column: auto;
     }
     .icao-input-area {
         width: 100%;
         margin-top: 15px;
     }
     .zulu-time {
-        justify-self: center;
+        align-self: center;
         margin-top: 15px;
+    }
+    
+    /* Reorder panels for mobile: METAR first, then TAF, then Configs/Avisos */
+    .center-panel { order: 1; height: auto; min-height: 350px; }
+    .right-panel { order: 2; height: auto; min-height: 350px; }
+    .left-panel { order: 3; height: auto; min-height: 350px; }
+    
+    .panel {
+        flex: none;
     }
 }
