@@ -25,21 +25,21 @@
       "short_name": "METAR",
       "description": "Ir diretamente para os dados METAR",
       "url": "./",
-      "icons": [{ "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIj48Y2lyY2xlIGN4PSI5NiIgY3k9Ijk2IiByPSI5MCIgZmlsbD0iIzAyODRjNyIvPjwvc3ZnPg==", "sizes": "192x192" }]
+      "icons": [{ "src": "./icons/shortcut-192x192.png", "sizes": "192x192", "type": "image/png" }]
     }
   ],
   "screenshots": [
     {
-      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDI0IiBoZWlnaHQ9Ijc2OCI+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0iI2UxZjVmZSIvPjx0ZXh0IHg9IjUwJSIgeT0iNTAlIiBmb250LXNpemU9IjUwIiBmaWxsPSIjMDI4NGM3IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5XZWF0aGVyIE1vbml0b3IgU2NyZWVuc2hvdDwvdGV4dD48L3N2Zz4=",
+      "src": "./icons/screenshot-wide.png",
       "sizes": "1024x768",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "form_factor": "wide",
       "label": "Painel Principal - Desktop"
     },
     {
-      "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MTQiIGhlaWdodD0iODk2Ij48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZTFmNWZlIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtc2l6ZT0iNDAiIGZpbGw9IiMwMjg0YzciIHRleHQtYW5jaG9yPSJtaWRkbGUiPldlYXRoZXIgTW9uaXRvcjwvdGV4dD48L3N2Zz4=",
+      "src": "./icons/screenshot-narrow.png",
       "sizes": "414x896",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "form_factor": "narrow",
       "label": "Painel Principal - Mobile"
     }
