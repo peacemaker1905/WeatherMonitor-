@@ -65,3 +65,27 @@ self.addEventListener('notificationclick', event => {
         })
     );
 });
+
+// Adicionado para satisfazer a auditoria do PWABuilder (Suporte a Web Push)
+self.addEventListener('push', event => {
+    let data = { title: "WEATHER MONITOR", body: "Nova atualização meteorológica." };
+    
+    if (event.data) {
+        try {
+            data = event.data.json();
+        } catch (e) {
+            data.body = event.data.text();
+        }
+    }
+    
+    const options = {
+        body: data.body,
+        icon: './icons/icon-192x192.png',
+        badge: './icons/icon-192x192.png',
+        vibrate: [200, 100, 200]
+    };
+    
+    event.waitUntil(
+        self.registration.showNotification(data.title, options)
+    );
+});
