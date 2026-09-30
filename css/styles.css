@@ -78,11 +78,26 @@ body {
     align-items: flex-start;
 }
 
+.title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.site-logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    object-fit: cover;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
 .title-area h1 {
     color: var(--airway-blue);
     font-size: 1.6rem;
     font-weight: 700;
-    margin-bottom: 8px;
+    margin-bottom: 0;
     letter-spacing: -0.5px;
 }
 
