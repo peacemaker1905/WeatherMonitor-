@@ -172,11 +172,22 @@ body {
     box-shadow: 0 2px 5px rgba(2, 132, 199, 0.2);
 }
 
+.tag-bell {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font-size: 1.1rem;
+    padding: 0;
+    margin-left: 6px;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.1));
+}
+
 .tag-remove {
     background: none;
     border: none;
     color: rgba(255,255,255,0.7);
-    margin-left: 8px;
+    margin-left: 6px;
     cursor: pointer;
     font-weight: bold;
     transition: color 0.2s;
@@ -227,6 +238,10 @@ body {
     flex-direction: column;
     overflow: hidden;
     box-shadow: var(--panel-shadow);
+}
+
+.panel-configs {
+    grid-column: 1 / -1; /* Ocupa todas as colunas */
 }
 
 .panel-header {
@@ -482,10 +497,8 @@ body {
     .panel {
         height: 450px;
     }
-    .left-panel, .title-area {
-        grid-column: span 2;
-    }
-    .left-panel {
+    .panel-configs {
+        grid-column: 1 / -1;
         height: auto;
     }
 }
@@ -509,9 +522,6 @@ body {
         flex-direction: column;
         align-items: flex-start;
     }
-    .left-panel, .title-area {
-        grid-column: auto;
-    }
     .icao-input-area {
         width: 100%;
         margin-top: 15px;
@@ -521,12 +531,9 @@ body {
         margin-top: 15px;
     }
     
-    /* Reorder panels for mobile: METAR first, then TAF, then Configs/Avisos */
-    .center-panel { order: 1; height: auto; min-height: 350px; }
-    .right-panel { order: 2; height: auto; min-height: 350px; }
-    .left-panel { order: 3; height: auto; min-height: 350px; }
-    
     .panel {
         flex: none;
+        height: auto; 
+        min-height: 350px;
     }
 }

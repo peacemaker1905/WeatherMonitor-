@@ -22,7 +22,7 @@ const apiStatusEl = document.getElementById('api-status');
 const textSizeSlider = document.getElementById('text-size');
 const volumeSlider = document.getElementById('volume');
 const audioFileInput = document.getElementById('audio-file');
-const chkMissingMetar = document.getElementById('chk-missing-metar-alarm');
+const chkReminderAlarm = document.getElementById('chk-reminder-alarm');
 const chkAvisoAlarm = document.getElementById('chk-aviso-alarm');
 const chkSpeciAlarm = document.getElementById('chk-speci-alarm');
 const toleranceMinutes = document.getElementById('tolerance-minutes');
@@ -62,6 +62,7 @@ function updateZuluTime() {
     // Check missing METAR on minute change
     if (now.getUTCSeconds() === 0) {
         checkMissingMetarLogic();
+        checkReminderLogic(now);
     }
 }
 
@@ -138,20 +139,45 @@ function setupEventListeners() {
 }
 
 // --- Tags Handling ---
+let monitoredIcaos = new Set(['SBGR']); // Track which ICAOs trigger missing METAR alarms
+
 function renderTags() {
     icaoTagsList.innerHTML = '';
     icaos.forEach(icao => {
         const li = document.createElement('li');
         li.className = 'tag';
-        li.textContent = icao;
-        const btn = document.createElement('button');
-        btn.className = 'tag-remove';
-        btn.textContent = 'x';
-        btn.onclick = () => {
-            icaos.delete(icao);
+        
+        const textSpan = document.createElement('span');
+        textSpan.textContent = icao;
+        li.appendChild(textSpan);
+        
+        // Botão de Sino (Monitoramento de falta de METAR)
+        const btnBell = document.createElement('button');
+        btnBell.className = 'tag-bell';
+        btnBell.innerHTML = monitoredIcaos.has(icao) ? '🔔' : '🔕';
+        btnBell.title = "Ativar/Desativar alerta de falta de METAR para esta localidade";
+        btnBell.onclick = () => {
+            if (monitoredIcaos.has(icao)) {
+                monitoredIcaos.delete(icao);
+            } else {
+                monitoredIcaos.add(icao);
+            }
             renderTags();
         };
-        li.appendChild(btn);
+        li.appendChild(btnBell);
+
+        // Botão de Excluir
+        const btnRemove = document.createElement('button');
+        btnRemove.className = 'tag-remove';
+        btnRemove.textContent = 'x';
+        btnRemove.title = "Excluir localidade completamente";
+        btnRemove.onclick = () => {
+            icaos.delete(icao);
+            monitoredIcaos.delete(icao);
+            renderTags();
+        };
+        li.appendChild(btnRemove);
+        
         icaoTagsList.appendChild(li);
     });
 }
@@ -241,7 +267,7 @@ let knownSpecis = new Set();
 let isFirstSpeciCheck = true;
 
 function checkMissingMetarLogic() {
-    if (!chkMissingMetar.checked || icaos.size === 0) return;
+    if (monitoredIcaos.size === 0) return;
     
     const now = new Date();
     const m = now.getUTCMinutes();
@@ -250,7 +276,7 @@ function checkMissingMetarLogic() {
     // Logic: se estivermos no minuto igual ou um pouco acima da tolerância, alarmamos uma vez
     if (m >= tol && m < tol + 2) { 
         const missingIcaos = [];
-        icaos.forEach(icao => {
+        monitoredIcaos.forEach(icao => {
             const hasRecent = (lastMetarData?.data?.data || []).some(d => d.id_localidade === icao);
             if (!hasRecent) missingIcaos.push(icao);
         });
@@ -258,6 +284,14 @@ function checkMissingMetarLogic() {
         if (missingIcaos.length > 0) {
             triggerAlarm("METAR em Falta", missingIcaos);
         }
+    }
+}
+
+function checkReminderLogic(now) {
+    if (!chkReminderAlarm || !chkReminderAlarm.checked) return;
+    // Dispara apenas quando for exatamente minuto 55
+    if (now.getUTCMinutes() === 55) {
+        triggerAlarm("Lembrete de Envio", ["Faltam 5 minutos para a hora cheia do METAR!"]);
     }
 }
 

@@ -46,8 +46,40 @@
     </header>
 
     <main class="dashboard-grid">
-        <!-- PAINEL ESQUERDO: Configs & METAR -->
-        <section class="panel left-panel">
+        <!-- 1. PAINEL METAR / SPECI -->
+        <section class="panel panel-metar">
+            <div class="panel-header">
+                <h2>⛅ METAR / SPECI</h2>
+            </div>
+            <div class="panel-content data-list" id="metar-container">
+                <p class="placeholder-text">Aguardando localidades...</p>
+            </div>
+        </section>
+
+        <!-- 2. PAINEL TAF -->
+        <section class="panel panel-taf">
+            <div class="panel-header flex-between">
+                <h2>✈️ TAF</h2>
+                <div class="timer-badge">Próxima verificação: <span id="timer-taf">60</span>s</div>
+            </div>
+            <div class="panel-content data-list" id="taf-container">
+                <p class="placeholder-text">Aguardando localidades...</p>
+            </div>
+        </section>
+
+        <!-- 3. PAINEL AVISOS -->
+        <section class="panel panel-avisos">
+            <div class="panel-header flex-between">
+                <h2>⚠️ Avisos de Aeródromo</h2>
+                <div class="timer-badge">Próxima verificação: <span id="timer-avisos">60</span>s</div>
+            </div>
+            <div class="panel-content data-list" id="avisos-container">
+                <p class="placeholder-text">Aguardando localidades...</p>
+            </div>
+        </section>
+
+        <!-- 4. PAINEL CONFIGURAÇÕES -->
+        <section class="panel panel-configs">
             <div class="panel-header">
                 <h2>⚙️ Configurações</h2>
             </div>
@@ -65,9 +97,9 @@
                     <input type="file" id="audio-file" accept="audio/*">
                 </div>
                 <div class="setting-group checkboxes">
+                    <label><input type="checkbox" id="chk-reminder-alarm" checked> Lembrete de envio de METAR aos 55 min</label>
                     <label><input type="checkbox" id="chk-repeat-alarm"> Repetir Alarme</label>
                     <label><input type="checkbox" id="chk-speci-alarm" checked> Receber alarme para SPECI</label>
-                    <label><input type="checkbox" id="chk-missing-metar-alarm" checked> Disparar alarme quando estiver sem METAR</label>
                     <label><input type="checkbox" id="chk-aviso-alarm" checked> Receber alarme para Avisos de Aeródromo</label>
                 </div>
                 <div class="setting-group">
@@ -76,38 +108,6 @@
                 </div>
                 <button id="btn-request-notifications" class="action-btn">🔔 Habilitar Notificações</button>
                 <button id="btn-test-alarm" class="action-btn secondary">Testar Alarme</button>
-            </div>
-
-            <div class="panel-header mt-4 flex-between">
-                <h2>⚠️ Avisos de Aeródromo</h2>
-                <div class="timer-badge">Próxima verificação: <span id="timer-avisos">60</span>s</div>
-            </div>
-            <div class="panel-content data-list" id="avisos-container">
-                <!-- Avisos go here -->
-                <p class="placeholder-text">Aguardando localidades...</p>
-            </div>
-        </section>
-
-        <!-- PAINEL CENTRAL: METAR / SPECI -->
-        <section class="panel center-panel">
-            <div class="panel-header">
-                <h2>⛅ METAR / SPECI</h2>
-            </div>
-            <div class="panel-content data-list" id="metar-container">
-                <!-- METAR data goes here -->
-                <p class="placeholder-text">Aguardando localidades...</p>
-            </div>
-        </section>
-
-        <!-- PAINEL DIREITO: TAF & Resumo -->
-        <section class="panel right-panel">
-            <div class="panel-header flex-between">
-                <h2>✈️ TAF</h2>
-                <div class="timer-badge">Próxima verificação: <span id="timer-taf">60</span>s</div>
-            </div>
-            <div class="panel-content data-list" id="taf-container">
-                <!-- TAF data goes here -->
-                <p class="placeholder-text">Aguardando localidades...</p>
             </div>
         </section>
     </main>
