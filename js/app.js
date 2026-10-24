@@ -5,7 +5,8 @@ const BASE_URL = 'https://api-redemet.decea.mil.br';
 let icaos = new Set(['SBGR']); // Default example
 let customAudioUrl = null;
 let audioObj = new Audio();
-let defaultBeepInterval = null;
+let alarmInterval = null;
+let audioCtx = null;
 
 // DOM Elements
 const zuluTimeEl = document.getElementById('zulu-time-display');
@@ -21,6 +22,7 @@ const apiStatusEl = document.getElementById('api-status');
 // Settings Elements
 const textSizeSlider = document.getElementById('text-size');
 const volumeSlider = document.getElementById('volume');
+const alarmSoundPresetEl = document.getElementById('alarm-sound-preset');
 const audioFileInput = document.getElementById('audio-file');
 const chkReminderAlarm = document.getElementById('chk-reminder-alarm');
 const chkAvisoAlarm = document.getElementById('chk-aviso-alarm');
@@ -43,6 +45,12 @@ function init() {
     renderTags();
     setupEventListeners();
     
+    // Load saved sound preset
+    const savedSound = localStorage.getItem('weather_alarm_sound');
+    if (savedSound && alarmSoundPresetEl) {
+        alarmSoundPresetEl.value = savedSound;
+    }
+
     // Initial fetch
     fetchData();
     // 60 seconds interval for fetch
@@ -109,6 +117,15 @@ function setupEventListeners() {
     volumeSlider.addEventListener('input', (e) => {
         audioObj.volume = e.target.value;
     });
+
+    if (alarmSoundPresetEl) {
+        alarmSoundPresetEl.addEventListener('change', (e) => {
+            localStorage.setItem('weather_alarm_sound', e.target.value);
+            if (!customAudioUrl) {
+                playCurrentPreset();
+            }
+        });
+    }
 
     audioFileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
@@ -193,7 +210,7 @@ async function fetchData() {
         const [metarRes, tafRes, avisoRes] = await Promise.all([
             fetchRedemet(`/mensagens/metar/${icaoStr}`),
             fetchRedemet(`/mensagens/taf/${icaoStr}`),
-            fetchRedemet(`/mensagens/aviso_aerodromo/${icaoStr}`) // Might be empty se não houver
+            fetchRedemet(`/mensagens/aviso/${icaoStr}`) // Endpoint oficial corrigido da REDEMET
         ]);
 
         renderData(metarRes, metarContainer, 'METAR');
@@ -238,7 +255,7 @@ function renderData(apiResponse, container, type) {
         card.className = 'data-card';
         card.innerHTML = `
             <div class="data-card-header">
-                <span class="icao-label">${item.id_localidade || 'N/A'}</span>
+                <span class="icao-label">${item.id_localidade || item.id_fir || 'AVISO'}</span>
                 <span class="time-label">${item.validade_inicial || item.data_hora || ''}</span>
             </div>
             <div class="data-content">${item.mens || 'Sem mensagem'}</div>
@@ -303,7 +320,8 @@ function checkNewAvisosLogic(avisoRes) {
     const currentAvisosIds = [];
 
     items.forEach(item => {
-        const avisoId = `${item.id_localidade}_${item.validade_inicial || item.data_hora || item.mens}`;
+        const loc = item.id_localidade || item.id_fir || 'AVISO';
+        const avisoId = `${loc}_${item.validade_inicial || item.data_hora || item.mens}`;
         currentAvisosIds.push(avisoId);
         
         if (!knownAvisos.has(avisoId)) {
@@ -319,7 +337,7 @@ function checkNewAvisosLogic(avisoRes) {
     });
 
     if (hasNew && !isFirstAvisoCheck) {
-        const icaosWithWarnings = [...new Set(items.map(item => item.id_localidade))];
+        const icaosWithWarnings = [...new Set(items.map(item => item.id_localidade || item.id_fir || 'AVISO'))];
         triggerAlarm("Novo Aviso de Aeródromo", icaosWithWarnings);
     }
     
@@ -359,6 +377,249 @@ function checkSpeciLogic(metarRes) {
     isFirstSpeciCheck = false;
 }
 
+// --- Web Audio Synthesizer Presets ---
+const SOUND_PRESETS = {
+    // Sutis / Discretos
+    'chime': {
+        name: 'Chime de Cabine',
+        durationMs: 1400,
+        play: (ctx, vol) => {
+            const now = ctx.currentTime;
+            // Nota 1: D5 (587.33 Hz)
+            const osc1 = ctx.createOscillator();
+            const gain1 = ctx.createGain();
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(587.33, now);
+            gain1.gain.setValueAtTime(vol * 0.7, now);
+            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+            osc1.connect(gain1);
+            gain1.connect(ctx.destination);
+            osc1.start(now);
+            osc1.stop(now + 0.6);
+
+            // Nota 2: A5 (880 Hz)
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(880, now + 0.25);
+            gain2.gain.setValueAtTime(0.001, now);
+            gain2.gain.setValueAtTime(vol * 0.8, now + 0.25);
+            gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.3);
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.start(now + 0.25);
+            osc2.stop(now + 1.3);
+        }
+    },
+    'soft-ping': {
+        name: 'Ping Suave',
+        durationMs: 800,
+        play: (ctx, vol) => {
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(800, now);
+            osc.frequency.exponentialRampToValueAtTime(450, now + 0.4);
+            gain.gain.setValueAtTime(vol * 0.8, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.6);
+        }
+    },
+    'radar': {
+        name: 'Pulso Sonar / Radar',
+        durationMs: 1200,
+        play: (ctx, vol) => {
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(1200, now);
+            osc.frequency.exponentialRampToValueAtTime(600, now + 0.6);
+            gain.gain.setValueAtTime(vol * 0.75, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.0);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 1.0);
+        }
+    },
+
+    // Moderados
+    'standard-beep': {
+        name: 'Bip Padrão',
+        durationMs: 900,
+        play: (ctx, vol) => {
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(880, now);
+            gain.gain.setValueAtTime(vol * 0.5, now);
+            gain.gain.setValueAtTime(vol * 0.5, now + 0.45);
+            gain.gain.linearRampToValueAtTime(0.001, now + 0.5);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.5);
+        }
+    },
+    'ding-dong': {
+        name: 'Ding-Dong Operacional',
+        durationMs: 1300,
+        play: (ctx, vol) => {
+            const now = ctx.currentTime;
+            const osc1 = ctx.createOscillator();
+            const gain1 = ctx.createGain();
+            osc1.type = 'triangle';
+            osc1.frequency.setValueAtTime(783.99, now);
+            gain1.gain.setValueAtTime(vol * 0.8, now);
+            gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+            osc1.connect(gain1);
+            gain1.connect(ctx.destination);
+            osc1.start(now);
+            osc1.stop(now + 0.45);
+
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.type = 'triangle';
+            osc2.frequency.setValueAtTime(523.25, now + 0.35);
+            gain2.gain.setValueAtTime(0.001, now);
+            gain2.gain.setValueAtTime(vol * 0.9, now + 0.35);
+            gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.start(now + 0.35);
+            osc2.stop(now + 1.2);
+        }
+    },
+
+    // Alarmantes / Urgentes
+    'urgent-triple': {
+        name: 'Bip Triplo Urgente',
+        durationMs: 900,
+        play: (ctx, vol) => {
+            const now = ctx.currentTime;
+            const delays = [0, 0.15, 0.30];
+            delays.forEach(d => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(1100, now + d);
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.setValueAtTime(vol * 0.6, now + d);
+                gain.gain.setValueAtTime(vol * 0.6, now + d + 0.08);
+                gain.gain.linearRampToValueAtTime(0.001, now + d + 0.09);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now + d);
+                osc.stop(now + d + 0.1);
+            });
+        }
+    },
+    'siren': {
+        name: 'Sirene Operacional',
+        durationMs: 1500,
+        play: (ctx, vol) => {
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(550, now);
+            osc.frequency.linearRampToValueAtTime(1250, now + 0.5);
+            osc.frequency.linearRampToValueAtTime(550, now + 1.0);
+            gain.gain.setValueAtTime(vol * 0.55, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.4);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 1.4);
+        }
+    },
+    'master-warning': {
+        name: 'Master Warning',
+        durationMs: 1100,
+        play: (ctx, vol) => {
+            const now = ctx.currentTime;
+            const pulses = [
+                { time: 0.0, freq: 800 },
+                { time: 0.14, freq: 1000 },
+                { time: 0.28, freq: 800 },
+                { time: 0.42, freq: 1000 }
+            ];
+            pulses.forEach(p => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(p.freq, now + p.time);
+                gain.gain.setValueAtTime(0.001, now);
+                gain.gain.setValueAtTime(vol * 0.6, now + p.time);
+                gain.gain.setValueAtTime(vol * 0.6, now + p.time + 0.10);
+                gain.gain.linearRampToValueAtTime(0.001, now + p.time + 0.11);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now + p.time);
+                osc.stop(now + p.time + 0.12);
+            });
+        }
+    }
+};
+
+function getAudioContext() {
+    if (!audioCtx || audioCtx.state === 'closed') {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    return audioCtx;
+}
+
+function playCurrentPreset() {
+    try {
+        const ctx = getAudioContext();
+        const presetKey = alarmSoundPresetEl?.value || 'standard-beep';
+        const preset = SOUND_PRESETS[presetKey] || SOUND_PRESETS['standard-beep'];
+        const vol = parseFloat(volumeSlider.value) || 0.8;
+        preset.play(ctx, vol);
+        return preset;
+    } catch (e) {
+        console.error('Audio synthesis error:', e);
+        return SOUND_PRESETS['standard-beep'];
+    }
+}
+
+function startAlarmAudio() {
+    stopAlarmAudio();
+
+    if (customAudioUrl) {
+        audioObj.loop = document.getElementById('chk-repeat-alarm').checked;
+        audioObj.play().catch(e => console.log('Audio block:', e));
+        return;
+    }
+
+    const preset = playCurrentPreset();
+    const isRepeat = document.getElementById('chk-repeat-alarm').checked;
+    if (isRepeat) {
+        const intervalDelay = Math.max(preset.durationMs + 300, 1000);
+        alarmInterval = setInterval(playCurrentPreset, intervalDelay);
+    }
+}
+
+function stopAlarmAudio() {
+    if (audioObj) {
+        audioObj.pause();
+        audioObj.currentTime = 0;
+    }
+    if (alarmInterval) {
+        clearInterval(alarmInterval);
+        alarmInterval = null;
+    }
+}
+
 function triggerAlarm(title, icaoList) {
     const msg = `Localidades: ${icaoList.join(', ')}`;
     
@@ -367,17 +628,7 @@ function triggerAlarm(title, icaoList) {
     visualAlert.classList.remove('hidden');
     
     // Efeito Áudio
-    if (document.getElementById('chk-repeat-alarm').checked) {
-        audioObj.loop = true;
-    } else {
-        audioObj.loop = false;
-    }
-    
-    if (!customAudioUrl) {
-        playDefaultBeep();
-    } else {
-        audioObj.play().catch(e => console.log('Audio block:', e));
-    }
+    startAlarmAudio();
 
     // Notificação Local (Push Desktop/Mobile)
     if (Notification.permission === 'granted') {
@@ -397,37 +648,9 @@ function triggerAlarm(title, icaoList) {
     }
 }
 
-function playDefaultBeep() {
-    const playSingleBeep = () => {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
-        gain.gain.setValueAtTime(volumeSlider.value, ctx.currentTime);
-        osc.start();
-        setTimeout(() => osc.stop(), 500);
-    };
-
-    playSingleBeep();
-
-    if (document.getElementById('chk-repeat-alarm').checked) {
-        if (!defaultBeepInterval) {
-            defaultBeepInterval = setInterval(playSingleBeep, 1000);
-        }
-    }
-}
-
 function stopAlarm() {
     visualAlert.classList.add('hidden');
-    audioObj.pause();
-    audioObj.currentTime = 0;
-    if (defaultBeepInterval) {
-        clearInterval(defaultBeepInterval);
-        defaultBeepInterval = null;
-    }
+    stopAlarmAudio();
 }
 
 // --- Service Worker ---

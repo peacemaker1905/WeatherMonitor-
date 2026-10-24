@@ -93,7 +93,26 @@
                     <input type="range" id="volume" min="0" max="1" step="0.1" value="1">
                 </div>
                 <div class="setting-group">
-                    <label for="audio-file">Áudio Personalizado:</label>
+                    <label for="alarm-sound-preset">Som do Alarme:</label>
+                    <select id="alarm-sound-preset">
+                        <optgroup label="Sutis / Discretos">
+                            <option value="chime">🔔 Chime de Cabine (Suave)</option>
+                            <option value="soft-ping">💧 Ping Suave (Discreto)</option>
+                            <option value="radar">📡 Pulso Sonar / Radar</option>
+                        </optgroup>
+                        <optgroup label="Moderados">
+                            <option value="standard-beep" selected>📟 Bip Padrão (880 Hz)</option>
+                            <option value="ding-dong">⏱️ Ding-Dong Operacional</option>
+                        </optgroup>
+                        <optgroup label="Alarmantes / Urgentes">
+                            <option value="urgent-triple">⚡ Bip Triplo Urgente</option>
+                            <option value="siren">🚨 Sirene Operacional</option>
+                            <option value="master-warning">✈️ Master Warning (Cockpit)</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label for="audio-file">Áudio Personalizado (Opcional):</label>
                     <input type="file" id="audio-file" accept="audio/*">
                 </div>
                 <div class="setting-group checkboxes">

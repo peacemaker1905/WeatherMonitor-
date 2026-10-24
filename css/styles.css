@@ -309,18 +309,33 @@ body {
     height: 6px;
     border-radius: 3px;
 }
-.setting-group input[type="number"], .setting-group input[type="file"] {
-    background: rgba(255,255,255,0.8);
-    border: 1px solid #e2e8f0;
+.setting-group input[type="number"], .setting-group input[type="file"], .setting-group select {
+    background: rgba(255,255,255,0.85);
+    border: 1px solid #cbd5e1;
     color: var(--text-main);
     padding: 8px 12px;
     border-radius: 8px;
     font-family: 'Nunito', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
     outline: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    cursor: pointer;
 }
-.setting-group input[type="number"]:focus {
+.setting-group input[type="number"]:focus, .setting-group select:focus {
     border-color: var(--airway-blue);
+    box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+}
+.setting-group select optgroup {
+    font-weight: 700;
+    color: var(--text-dim);
+    background: #f8fafc;
+}
+.setting-group select option {
+    font-weight: 600;
+    color: var(--text-main);
+    background: #ffffff;
+    padding: 6px;
 }
 
 .checkboxes label {
