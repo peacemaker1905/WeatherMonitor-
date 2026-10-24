@@ -1,4 +1,4 @@
-const CACHE_NAME = 'redemet-pwa-v4';
+const CACHE_NAME = 'redemet-pwa-v5';
 const ASSETS = [
     './',
     './index.html',
